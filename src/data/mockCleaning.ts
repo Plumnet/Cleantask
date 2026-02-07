@@ -1,0 +1,55 @@
+import type { CleaningItem } from "@/types/cleaning";
+
+export const mockCleaningItems: CleaningItem[] = [
+  {
+    id: "clean-1",
+    name: "床掃除",
+    categoryId: "cat-1",
+    frequency: 3,
+    lastCleanedAt: "2024-01-12",
+    nextCleaningAt: "2024-01-15",
+    memo: "掃除機とモップ",
+  },
+  {
+    id: "clean-2",
+    name: "換気扇",
+    categoryId: "cat-2",
+    frequency: 30,
+    lastCleanedAt: "2023-12-20",
+    nextCleaningAt: "2024-01-19",
+    memo: "月1回の大掃除",
+  },
+  {
+    id: "clean-3",
+    name: "浴槽",
+    categoryId: "cat-3",
+    frequency: 1,
+    lastCleanedAt: "2024-01-14",
+    nextCleaningAt: "2024-01-15",
+  },
+  {
+    id: "clean-4",
+    name: "トイレ掃除",
+    categoryId: "cat-4",
+    frequency: 2,
+    lastCleanedAt: "2024-01-13",
+    nextCleaningAt: "2024-01-15",
+  },
+  {
+    id: "clean-5",
+    name: "窓拭き",
+    categoryId: "cat-1",
+    frequency: 14,
+    lastCleanedAt: "2024-01-05",
+    nextCleaningAt: "2024-01-19",
+    memo: "リビングの大きな窓",
+  },
+  {
+    id: "clean-6",
+    name: "エアコンフィルター",
+    categoryId: "cat-5",
+    frequency: 14,
+    lastCleanedAt: "2024-01-01",
+    nextCleaningAt: "2024-01-15",
+  },
+];

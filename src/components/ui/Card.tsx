@@ -1,0 +1,19 @@
+import type { ReactNode } from "react";
+
+type CardProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+export function Card({ children, className = "" }: CardProps) {
+  return (
+    <div
+      className={`
+        bg-white rounded-lg border border-neutral-200 shadow-sm p-4
+        ${className}
+      `}
+    >
+      {children}
+    </div>
+  );
+}
