@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import type { CleaningItem } from "@/types/cleaning";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
-import { mockCategories } from "@/data/mockCategories";
+import { useCleaningContext } from "@/contexts/CleaningContext";
 
 type CleaningListItemProps = {
   item: CleaningItem;
@@ -33,17 +36,50 @@ function getStatusBadge(daysUntil: number) {
 }
 
 export function CleaningListItem({ item }: CleaningListItemProps) {
-  const category = mockCategories.find((c) => c.id === item.categoryId);
+  const { categories, completeTask, deleteItem } = useCleaningContext();
+  const itemCategories = item.categoryIds
+    .map((id) => categories.find((c) => c.id === id))
+    .filter(Boolean);
   const daysUntil = getDaysUntil(item.nextCleaningAt);
+  const isOverdue = daysUntil < 0;
+  const isAlertSoon = daysUntil > 0 && daysUntil <= 2;
+
+  const handleDelete = () => {
+    if (window.confirm(`「${item.name}」を削除しますか？`)) {
+      deleteItem(item.id);
+    }
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-medium text-gray-900">{item.name}</h3>
-            {category && (
-              <Badge className={category.color}>{category.name}</Badge>
+            <Link href={`/cleaning/${item.id}`}>
+              <h3
+                className={`font-medium hover:underline ${
+                  isOverdue ? "text-red-600" : "text-gray-900"
+                }`}
+              >
+                {item.name}
+              </h3>
+            </Link>
+            {isAlertSoon && (
+              <svg
+                className="w-5 h-5 text-amber-500"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+              </svg>
+            )}
+            {itemCategories.map(
+              (cat) =>
+                cat && (
+                  <Badge key={cat.id} className={cat.color}>
+                    {cat.name}
+                  </Badge>
+                ),
             )}
             {getStatusBadge(daysUntil)}
           </div>
@@ -66,6 +102,26 @@ export function CleaningListItem({ item }: CleaningListItemProps) {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => completeTask(item.id)}
+            title="完了"
+          >
+            <svg
+              className="w-5 h-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </Button>
           <Link href={`/cleaning/${item.id}/edit`}>
             <IconButton label="編集">
               <svg
@@ -83,7 +139,7 @@ export function CleaningListItem({ item }: CleaningListItemProps) {
               </svg>
             </IconButton>
           </Link>
-          <IconButton label="削除" variant="danger">
+          <IconButton label="削除" variant="danger" onClick={handleDelete}>
             <svg
               className="w-5 h-5"
               fill="none"
