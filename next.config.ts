@@ -1,18 +1,7 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    rules: {
-      "**/*.{tsx,jsx}": {
-        loaders: [
-          {
-            loader: "@locator/webpack-loader",
-            options: { env: "development" },
-          },
-        ],
-      },
-    },
-  },
-};
+  // 既存の設定のみ残す（react-dev-inspectorの記述は不要）
+}
 
-export default nextConfig;
+export default nextConfig
