@@ -1,35 +1,49 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model CleaningTask {
-  id            String    @id @default(cuid())
-  title         String
-  description   String?
-  location      String?
-  frequency     Frequency @default(WEEKLY)
-  lastCompleted DateTime?
-  nextDue       DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model CleaningItem {
+  id             String   @id @default(cuid())
+  name           String
+  frequency      Int
+  lastCleanedAt  DateTime @db.Date
+  nextCleaningAt DateTime @db.Date
+  description    String?
+  memo           String?
+  imageFileName  String?
+  warningStatus  String   @default("none")
+  categoryIds    String[]
+  consumableIds  String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  kaizenHistory KaizenRecord[]
+  warningTask   WarningTask?
 }
 
-enum Frequency {
-  DAILY
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-  QUARTERLY
-  YEARLY
+model KaizenRecord {
+  id                String       @id @default(cuid())
+  cleaningItemId    String
+  cause             String
+  previousFrequency Int
+  newFrequency      Int
+  createdAt         DateTime     @default(now())
+  cleaningItem      CleaningItem @relation(fields: [cleaningItemId], references: [id], onDelete: Cascade)
+}
+
+model WarningTask {
+  id                     String       @id @default(cuid())
+  cleaningItemId         String       @unique
+  kaizenRecordId         String
+  consecutiveOnTimeCount Int          @default(0)
+  startedAt              DateTime     @db.Date
+  resolvedAt             DateTime?    @db.Date
+  cleaningItem           CleaningItem @relation(fields: [cleaningItemId], references: [id], onDelete: Cascade)
 }

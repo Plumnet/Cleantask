@@ -10,8 +10,14 @@ import {
 } from "react";
 import type { CleaningItem, KaizenRecord } from "@/types/cleaning";
 import type { Category } from "@/types/category";
-import { mockCleaningItems } from "@/data/mockCleaning";
-import { mockCategories } from "@/data/mockCategories";
+import {
+  createCleaningItem,
+  updateCleaningItem,
+  deleteCleaningItem,
+  completeCleaningTask,
+  submitKaizen as submitKaizenAction,
+  cancelWarning as cancelWarningAction,
+} from "@/app/(main)/cleaning/actions";
 
 const toISO = (d: Date) => d.toISOString().split("T")[0];
 
@@ -29,16 +35,16 @@ type CleaningContextValue = {
       CleaningItem,
       "id" | "warningStatus" | "kaizenHistory" | "nextCleaningAt"
     >,
-  ) => void;
-  updateItem: (id: string, updates: Partial<CleaningItem>) => void;
-  deleteItem: (id: string) => void;
-  completeTask: (id: string) => void;
+  ) => Promise<void>;
+  updateItem: (id: string, updates: Partial<CleaningItem>) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+  completeTask: (id: string) => Promise<void>;
   submitKaizen: (
     itemId: string,
     cause: string,
     newFrequency?: number,
-  ) => void;
-  cancelWarning: (itemId: string) => void;
+  ) => Promise<void>;
+  cancelWarning: (itemId: string) => Promise<void>;
   addCategory: (name: string) => Category | null;
 
   searchQuery: string;
@@ -83,11 +89,19 @@ const CATEGORY_COLORS = [
   "bg-teal-100 text-teal-800",
 ];
 
-export function CleaningProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CleaningItem[]>(mockCleaningItems);
-  const [categories, setCategories] = useState<Category[]>([
-    ...mockCategories,
-  ]);
+type CleaningProviderProps = {
+  children: ReactNode;
+  initialItems: CleaningItem[];
+  initialCategories: Category[];
+};
+
+export function CleaningProvider({
+  children,
+  initialItems,
+  initialCategories,
+}: CleaningProviderProps) {
+  const [items, setItems] = useState<CleaningItem[]>(initialItems);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -97,26 +111,31 @@ export function CleaningProvider({ children }: { children: ReactNode }) {
   const [overdueAlertShown, setOverdueAlertShown] = useState(false);
 
   const addItem = useCallback(
-    (
+    async (
       item: Omit<
         CleaningItem,
         "id" | "warningStatus" | "kaizenHistory" | "nextCleaningAt"
       >,
     ) => {
+      // ローカルstateを即時更新（楽観的更新）
       const newItem: CleaningItem = {
         ...item,
-        id: `clean-${Date.now()}`,
+        id: `tmp-${Date.now()}`,
         warningStatus: "none",
         kaizenHistory: [],
         nextCleaningAt: addDaysToDate(item.lastCleanedAt, item.frequency),
       };
       setItems((prev) => [...prev, newItem]);
+
+      // DBに保存
+      await createCleaningItem(item);
     },
     [],
   );
 
   const updateItem = useCallback(
-    (id: string, updates: Partial<CleaningItem>) => {
+    async (id: string, updates: Partial<CleaningItem>) => {
+      // ローカルstateを即時更新
       setItems((prev) =>
         prev.map((item) => {
           if (item.id !== id) return item;
@@ -130,15 +149,19 @@ export function CleaningProvider({ children }: { children: ReactNode }) {
           return updated;
         }),
       );
+
+      // DBに保存
+      await updateCleaningItem(id, updates);
     },
     [],
   );
 
-  const deleteItem = useCallback((id: string) => {
+  const deleteItem = useCallback(async (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
+    await deleteCleaningItem(id);
   }, []);
 
-  const completeTask = useCallback((id: string) => {
+  const completeTask = useCallback(async (id: string) => {
     const todayStr = toISO(new Date());
     setItems((prev) =>
       prev.map((item) => {
@@ -174,10 +197,12 @@ export function CleaningProvider({ children }: { children: ReactNode }) {
         return updated;
       }),
     );
+
+    await completeCleaningTask(id);
   }, []);
 
   const submitKaizen = useCallback(
-    (itemId: string, cause: string, newFrequency?: number) => {
+    async (itemId: string, cause: string, newFrequency?: number) => {
       const todayStr = toISO(new Date());
       setItems((prev) =>
         prev.map((item) => {
@@ -210,11 +235,13 @@ export function CleaningProvider({ children }: { children: ReactNode }) {
           };
         }),
       );
+
+      await submitKaizenAction(itemId, cause, newFrequency);
     },
     [],
   );
 
-  const cancelWarning = useCallback((itemId: string) => {
+  const cancelWarning = useCallback(async (itemId: string) => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== itemId) return item;
@@ -227,6 +254,8 @@ export function CleaningProvider({ children }: { children: ReactNode }) {
         };
       }),
     );
+
+    await cancelWarningAction(itemId);
   }, []);
 
   const addCategory = useCallback(

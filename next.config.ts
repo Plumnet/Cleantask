@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // 既存の設定のみ残す（react-dev-inspectorの記述は不要）
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
 }
 
 export default nextConfig
