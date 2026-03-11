@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
+import { logout } from "@/app/(auth)/actions";
 
 type HeaderDropdownProps = {
   userName: string;
@@ -49,13 +50,14 @@ export function HeaderDropdown({ userName, avatarUrl }: HeaderDropdownProps) {
           >
             アカウント設定
           </Link>
-          <Link
-            href="/login"
-            className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-            onClick={() => setIsOpen(false)}
-          >
-            ログアウト
-          </Link>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+            >
+              ログアウト
+            </button>
+          </form>
         </div>
       )}
     </div>

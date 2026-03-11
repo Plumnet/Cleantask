@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { HeaderDropdown } from "./HeaderDropdown";
-import { mockUser } from "@/data/mockUser";
+
+type HeaderProps = {
+  user: {
+    username: string;
+    avatarUrl?: string;
+  };
+};
 
 function getCurrentDateTime(): string {
   const now = new Date();
@@ -14,7 +20,7 @@ function getCurrentDateTime(): string {
   return `${year}年${month}月${day}日 ${hours}:${minutes}`;
 }
 
-export function Header() {
+export function Header({ user }: HeaderProps) {
   const alertCount = 3;
 
   return (
@@ -55,8 +61,8 @@ export function Header() {
           </button>
 
           <HeaderDropdown
-            userName={mockUser.username}
-            avatarUrl={mockUser.avatarUrl}
+            userName={user.username}
+            avatarUrl={user.avatarUrl}
           />
         </div>
       </div>

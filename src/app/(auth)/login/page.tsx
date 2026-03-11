@@ -1,9 +1,18 @@
+"use client";
+
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { login } from "@/app/(auth)/actions";
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const message = searchParams.get("message");
+
   return (
     <Card className="w-full max-w-md">
       <div className="text-center mb-6">
@@ -11,15 +20,28 @@ export default function LoginPage() {
         <p className="text-gray-600">アカウントにログイン</p>
       </div>
 
-      <form className="space-y-4">
+      {message && (
+        <p className="mb-4 text-sm text-green-600 bg-green-50 rounded-md px-3 py-2">
+          {message}
+        </p>
+      )}
+      {error && (
+        <p className="mb-4 text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
+          {error}
+        </p>
+      )}
+
+      <form action={login} className="space-y-4">
         <Input
-          label="ユーザーID"
-          type="text"
-          placeholder="ユーザーIDを入力"
+          label="メールアドレス"
+          name="email"
+          type="email"
+          placeholder="メールアドレスを入力"
           required
         />
         <Input
           label="パスワード"
+          name="password"
           type="password"
           placeholder="パスワードを入力"
           required
@@ -38,5 +60,13 @@ export default function LoginPage() {
         </p>
       </div>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
