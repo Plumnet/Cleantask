@@ -29,7 +29,8 @@ export default function CleaningListPage() {
     if (overdueItems.length > 0 && !overdueAlertShown) {
       setOverdueAlertShown(true);
     }
-  }, [overdueItems, overdueAlertShown, setOverdueAlertShown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overdueItems]);
 
   const handleStartKaizen = (itemId: string) => {
     setOverdueAlertShown(false);
