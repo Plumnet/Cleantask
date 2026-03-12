@@ -1,6 +1,7 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Card } from "@/components/ui/Card";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useCleaningContext } from "@/contexts/CleaningContext";
 import { mockConsumableItems } from "@/data/mockConsumable";
+import { createClient } from "@/lib/supabase/client";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -17,6 +19,19 @@ export default function CleaningDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { items, categories } = useCleaningContext();
   const item = items.find((i) => i.id === id);
+
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!item?.imageFileName) return;
+    const supabase = createClient();
+    supabase.storage
+      .from("cleaning")
+      .createSignedUrl(item.imageFileName, 3600)
+      .then(({ data }) => {
+        if (data?.signedUrl) setImageUrl(data.signedUrl);
+      });
+  }, [item?.imageFileName]);
 
   if (!item) {
     return (
@@ -97,11 +112,17 @@ export default function CleaningDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          {item.imageFileName && (
+          {imageUrl && (
             <div>
               <dt className="text-sm font-medium text-gray-500">画像</dt>
-              <dd className="mt-1 text-sm text-gray-600">
-                {item.imageFileName}
+              <dd className="mt-1">
+                <Image
+                  src={imageUrl}
+                  alt={item.name}
+                  width={300}
+                  height={300}
+                  className="rounded-md border border-gray-200 object-cover"
+                />
               </dd>
             </div>
           )}
