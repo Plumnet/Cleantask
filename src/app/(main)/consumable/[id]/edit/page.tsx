@@ -1,6 +1,8 @@
+import { notFound } from "next/navigation";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ConsumableForm } from "@/components/consumable/ConsumableForm";
-import { mockConsumableItems } from "@/data/mockConsumable";
+import prisma from "@/lib/prisma";
+import { toConsumableItem } from "@/lib/consumable-db";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -8,8 +10,10 @@ type PageProps = {
 
 export default async function ConsumableEditPage({ params }: PageProps) {
   const { id } = await params;
-  const item =
-    mockConsumableItems.find((i) => i.id === id) || mockConsumableItems[0];
+  const rawItem = await prisma.consumableItem.findUnique({ where: { id } });
+  if (!rawItem) notFound();
+
+  const item = toConsumableItem(rawItem);
 
   return (
     <PageContainer>

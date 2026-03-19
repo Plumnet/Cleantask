@@ -47,3 +47,27 @@ model WarningTask {
   resolvedAt             DateTime?    @db.Date
   cleaningItem           CleaningItem @relation(fields: [cleaningItemId], references: [id], onDelete: Cascade)
 }
+
+model ConsumableItem {
+  id            String   @id @default(cuid())
+  name          String
+  categoryId    String
+  maxStock      Int
+  currentStock  Int
+  memo          String?
+  shopType      String   @default("実店舗")
+  keyword       String?
+  imageFileName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stockOutRecords StockOutRecord[]
+}
+
+model StockOutRecord {
+  id             String         @id @default(cuid())
+  consumableId   String
+  date           DateTime       @db.Date
+  note           String?
+  consumableItem ConsumableItem @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+}

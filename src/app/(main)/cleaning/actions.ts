@@ -119,6 +119,26 @@ export async function completeCleaningTask(id: string): Promise<void> {
   }
 
   await prisma.cleaningItem.update({ where: { id }, data: updateData });
+
+  // リンクされた消耗品の残量を減らす
+  for (const consumableId of item.consumableIds) {
+    const cons = await prisma.consumableItem.findUnique({
+      where: { id: consumableId },
+    });
+    if (!cons || cons.currentStock <= 0) continue;
+
+    const updated = await prisma.consumableItem.update({
+      where: { id: consumableId },
+      data: { currentStock: { decrement: 1 } },
+    });
+
+    if (updated.currentStock === 0) {
+      await prisma.stockOutRecord.create({
+        data: { consumableId, date: today },
+      });
+    }
+  }
+
   revalidatePath("/cleaning/list");
 }
 

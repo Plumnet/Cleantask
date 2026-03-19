@@ -7,7 +7,7 @@ type CounterProps = {
 export function Counter({ current, max, className = "" }: CounterProps) {
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      <div className="flex gap-0.5">
+      <div className="flex flex-wrap gap-0.5">
         {Array.from({ length: max }, (_, i) => (
           <span
             key={i}

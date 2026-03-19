@@ -8,6 +8,7 @@ export const mockConsumableItems: ConsumableItem[] = [
     maxStock: 5,
     currentStock: 2,
     memo: "12ロール入りパック",
+    shopType: "実店舗",
   },
   {
     id: "cons-2",
@@ -16,6 +17,7 @@ export const mockConsumableItems: ConsumableItem[] = [
     maxStock: 3,
     currentStock: 1,
     memo: "詰め替え用",
+    shopType: "実店舗",
   },
   {
     id: "cons-3",
@@ -23,6 +25,7 @@ export const mockConsumableItems: ConsumableItem[] = [
     categoryId: "ccat-3",
     maxStock: 3,
     currentStock: 3,
+    shopType: "実店舗",
   },
   {
     id: "cons-4",
@@ -31,6 +34,7 @@ export const mockConsumableItems: ConsumableItem[] = [
     maxStock: 5,
     currentStock: 4,
     memo: "5箱セット",
+    shopType: "実店舗",
   },
   {
     id: "cons-5",
@@ -39,6 +43,8 @@ export const mockConsumableItems: ConsumableItem[] = [
     maxStock: 3,
     currentStock: 0,
     memo: "液体タイプ",
+    shopType: "ネットショップ",
+    keyword: "洗濯洗剤 液体",
   },
   {
     id: "cons-6",
@@ -46,6 +52,7 @@ export const mockConsumableItems: ConsumableItem[] = [
     categoryId: "ccat-4",
     maxStock: 4,
     currentStock: 2,
+    shopType: "実店舗",
   },
 ];
 

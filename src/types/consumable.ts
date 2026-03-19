@@ -2,14 +2,17 @@ export type ConsumableItem = {
   id: string;
   name: string;
   categoryId: string;
-  maxStock: number; // 最大ストック数
-  currentStock: number; // 現在の残り量
+  maxStock: number;
+  currentStock: number;
   memo?: string;
+  shopType: "ネットショップ" | "実店舗";
+  keyword?: string;
+  imageFileName?: string;
 };
 
 export type StockOutRecord = {
   id: string;
   consumableId: string;
-  date: string; // ISO日付
+  date: string;
   note?: string;
 };

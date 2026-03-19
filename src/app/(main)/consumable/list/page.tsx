@@ -3,9 +3,34 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/Button";
 import { ConsumableFilter } from "@/components/consumable/ConsumableFilter";
 import { ConsumableListItem } from "@/components/consumable/ConsumableListItem";
-import { mockConsumableItems } from "@/data/mockConsumable";
+import prisma from "@/lib/prisma";
+import { toConsumableItem } from "@/lib/consumable-db";
 
-export default function ConsumableListPage() {
+type SearchParams = Promise<{
+  q?: string;
+  categoryId?: string;
+  sort?: string;
+}>;
+
+export default async function ConsumableListPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { q, categoryId, sort } = await searchParams;
+
+  const where: Record<string, unknown> = {};
+  if (q) where.name = { contains: q, mode: "insensitive" };
+  if (categoryId) where.categoryId = categoryId;
+
+  const orderBy =
+    sort === "name"
+      ? { name: "asc" as const }
+      : { currentStock: "asc" as const };
+
+  const rawItems = await prisma.consumableItem.findMany({ where, orderBy });
+  const items = rawItems.map(toConsumableItem);
+
   return (
     <PageContainer>
       <div className="flex items-center justify-between mb-6">
@@ -35,9 +60,22 @@ export default function ConsumableListPage() {
       </div>
 
       <div className="space-y-3">
-        {mockConsumableItems.map((item) => (
-          <ConsumableListItem key={item.id} item={item} />
-        ))}
+        {items.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">
+            消耗品が登録されていません
+          </p>
+        ) : (
+          items.map((item) => <ConsumableListItem key={item.id} item={item} />)
+        )}
+      </div>
+
+      <div className="mt-8 text-center">
+        <Link
+          href="/cleaning/list"
+          className="text-blue-600 hover:underline text-sm"
+        >
+          掃除一覧はこちら →
+        </Link>
       </div>
     </PageContainer>
   );
