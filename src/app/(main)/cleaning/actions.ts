@@ -57,7 +57,7 @@ export async function updateCleaningItem(
     if (freq !== undefined) {
       updateData.nextCleaningAt = addDaysToDate(data.lastCleanedAt, freq);
     } else {
-      const current = await prisma.cleaningItem.findFirst({ where: { id, userId } });
+      const current = await prisma.cleaningItem.findFirst({ where: { id, OR: [{ userId }, { userId: "" }] } });
       if (current) {
         updateData.nextCleaningAt = addDaysToDate(
           toISO(current.lastCleanedAt),
@@ -66,7 +66,7 @@ export async function updateCleaningItem(
       }
     }
   } else if (data.frequency !== undefined) {
-    const current = await prisma.cleaningItem.findFirst({ where: { id, userId } });
+    const current = await prisma.cleaningItem.findFirst({ where: { id, OR: [{ userId }, { userId: "" }] } });
     if (current) {
       updateData.nextCleaningAt = addDaysToDate(
         toISO(current.lastCleanedAt),
@@ -75,13 +75,13 @@ export async function updateCleaningItem(
     }
   }
 
-  await prisma.cleaningItem.updateMany({ where: { id, userId }, data: updateData });
+  await prisma.cleaningItem.updateMany({ where: { id, OR: [{ userId }, { userId: "" }] }, data: { ...updateData, userId } });
   revalidatePath("/cleaning/list");
 }
 
 export async function deleteCleaningItem(id: string): Promise<void> {
   const userId = await getCurrentUserId();
-  await prisma.cleaningItem.deleteMany({ where: { id, userId } });
+  await prisma.cleaningItem.deleteMany({ where: { id, OR: [{ userId }, { userId: "" }] } });
   revalidatePath("/cleaning/list");
 }
 
@@ -91,10 +91,15 @@ export async function completeCleaningTask(id: string): Promise<void> {
   today.setHours(0, 0, 0, 0);
 
   const item = await prisma.cleaningItem.findFirst({
-    where: { id, userId },
+    where: { id, OR: [{ userId }, { userId: "" }] },
     include: { warningTask: true },
   });
   if (!item) return;
+
+  // userId 未設定の古いデータは現在のユーザーに帰属させる
+  if (item.userId === "") {
+    await prisma.cleaningItem.update({ where: { id }, data: { userId } });
+  }
 
   const todayStr = toISO(today);
   const nextCleaningAt = addDaysToDate(todayStr, item.frequency);
@@ -158,7 +163,7 @@ export async function submitKaizen(
   today.setHours(0, 0, 0, 0);
   const todayStr = toISO(today);
 
-  const item = await prisma.cleaningItem.findFirst({ where: { id: itemId, userId } });
+  const item = await prisma.cleaningItem.findFirst({ where: { id: itemId, OR: [{ userId }, { userId: "" }] } });
   if (!item) return;
 
   const updatedFrequency = newFrequency ?? item.frequency;
@@ -202,7 +207,7 @@ export async function cancelWarning(itemId: string): Promise<void> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const item = await prisma.cleaningItem.findFirst({ where: { id: itemId, userId } });
+  const item = await prisma.cleaningItem.findFirst({ where: { id: itemId, OR: [{ userId }, { userId: "" }] } });
   if (!item) return;
 
   await prisma.warningTask.updateMany({

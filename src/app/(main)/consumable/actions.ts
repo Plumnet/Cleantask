@@ -40,13 +40,13 @@ export async function updateConsumableItem(
   if (data.keyword !== undefined) updateData.keyword = data.keyword ?? null;
   if (data.imageFileName !== undefined) updateData.imageFileName = data.imageFileName ?? null;
 
-  await prisma.consumableItem.updateMany({ where: { id, userId }, data: updateData });
+  await prisma.consumableItem.updateMany({ where: { id, OR: [{ userId }, { userId: "" }] }, data: { ...updateData, userId } });
   revalidatePath("/consumable/list");
 }
 
 export async function deleteConsumableItem(id: string): Promise<void> {
   const userId = await getCurrentUserId();
-  await prisma.consumableItem.deleteMany({ where: { id, userId } });
+  await prisma.consumableItem.deleteMany({ where: { id, OR: [{ userId }, { userId: "" }] } });
   revalidatePath("/consumable/list");
 }
 
@@ -54,7 +54,7 @@ export async function decreaseStock(
   id: string,
 ): Promise<{ newStock: number }> {
   const userId = await getCurrentUserId();
-  const item = await prisma.consumableItem.findFirst({ where: { id, userId } });
+  const item = await prisma.consumableItem.findFirst({ where: { id, OR: [{ userId }, { userId: "" }] } });
   if (!item) return { newStock: 0 };
 
   if (item.currentStock <= 0) return { newStock: 0 };
@@ -114,7 +114,8 @@ export async function analyzeReceiptImage(
 }
 
 export async function restockConsumable(id: string): Promise<void> {
-  const item = await prisma.consumableItem.findUnique({ where: { id } });
+  const userId = await getCurrentUserId();
+  const item = await prisma.consumableItem.findFirst({ where: { id, OR: [{ userId }, { userId: "" }] } });
   if (!item) return;
   if (item.currentStock >= item.maxStock) return;
 
