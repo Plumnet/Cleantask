@@ -2,10 +2,18 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Avatar } from "@/components/ui/Avatar";
-import { mockUser } from "@/data/mockUser";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { ProfileForm } from "@/components/account/ProfileForm";
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const username = user.user_metadata?.username ?? user.email ?? "";
+  const email = user.email ?? "";
+
   return (
     <PageContainer>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">アカウント設定</h1>
@@ -15,29 +23,7 @@ export default function AccountPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             プロフィール
           </h2>
-          <div className="flex items-center gap-4 mb-6">
-            <Avatar name={mockUser.username} size="lg" />
-            <Button variant="secondary" size="sm">
-              画像を変更
-            </Button>
-          </div>
-          <form className="space-y-4">
-            <Input
-              label="ユーザー名"
-              type="text"
-              defaultValue={mockUser.username}
-              required
-            />
-            <Input
-              label="メールアドレス"
-              type="email"
-              defaultValue={mockUser.email}
-              required
-            />
-            <div className="flex justify-end">
-              <Button type="submit">保存する</Button>
-            </div>
-          </form>
+          <ProfileForm username={username} email={email} />
         </Card>
 
         <Card>

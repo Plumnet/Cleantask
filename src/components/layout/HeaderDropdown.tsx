@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { logout } from "@/app/(auth)/actions";
+    import { logout } from "@/app/(auth)/actions";
 
 type HeaderDropdownProps = {
   userName: string;
