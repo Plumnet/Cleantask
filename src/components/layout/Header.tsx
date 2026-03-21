@@ -8,6 +8,7 @@ type HeaderProps = {
     username: string;
     avatarUrl?: string;
   };
+  alertCount: number;
 };
 
 function getCurrentDateTime(): string {
@@ -20,8 +21,7 @@ function getCurrentDateTime(): string {
   return `${year}年${month}月${day}日 ${hours}:${minutes}`;
 }
 
-export function Header({ user }: HeaderProps) {
-  const alertCount = 3;
+export function Header({ user, alertCount }: HeaderProps) {
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
