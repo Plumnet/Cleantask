@@ -23,10 +23,10 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
 
   const [overdueCount, outOfStockCount] = await Promise.all([
     prisma.cleaningItem.count({
-      where: { nextCleaningAt: { lte: today } },
+      where: { userId: user.id, nextCleaningAt: { lte: today } },
     }),
     prisma.consumableItem.count({
-      where: { currentStock: 0 },
+      where: { userId: user.id, currentStock: 0 },
     }),
   ]);
 

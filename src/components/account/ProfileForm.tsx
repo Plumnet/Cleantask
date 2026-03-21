@@ -11,7 +11,7 @@ type Props = {
   email: string;
 };
 
-const initialState = {};
+const initialState: { success?: string; error?: string } = {};
 
 export function ProfileForm({ username, email }: Props) {
   const [state, formAction, isPending] = useActionState(updateProfile, initialState);

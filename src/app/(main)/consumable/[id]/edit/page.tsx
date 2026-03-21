@@ -3,14 +3,15 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { ConsumableForm } from "@/components/consumable/ConsumableForm";
 import prisma from "@/lib/prisma";
 import { toConsumableItem } from "@/lib/consumable-db";
+import { getCurrentUserId } from "@/lib/auth";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
 export default async function ConsumableEditPage({ params }: PageProps) {
-  const { id } = await params;
-  const rawItem = await prisma.consumableItem.findUnique({ where: { id } });
+  const [{ id }, userId] = await Promise.all([params, getCurrentUserId()]);
+  const rawItem = await prisma.consumableItem.findFirst({ where: { id, userId } });
   if (!rawItem) notFound();
 
   const item = toConsumableItem(rawItem);

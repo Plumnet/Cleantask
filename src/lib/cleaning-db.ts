@@ -60,8 +60,9 @@ export function mapToCleaningItem(
   };
 }
 
-export async function getCleaningItems(): Promise<CleaningItem[]> {
+export async function getCleaningItems(userId: string): Promise<CleaningItem[]> {
   const records = await prisma.cleaningItem.findMany({
+    where: { userId },
     include: { kaizenHistory: true, warningTask: true },
     orderBy: { nextCleaningAt: "asc" },
   });

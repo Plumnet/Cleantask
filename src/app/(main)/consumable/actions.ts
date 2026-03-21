@@ -3,12 +3,15 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { ConsumableItem } from "@/types/consumable";
+import { getCurrentUserId } from "@/lib/auth";
 
 export async function createConsumableItem(
   data: Omit<ConsumableItem, "id">,
 ): Promise<void> {
+  const userId = await getCurrentUserId();
   await prisma.consumableItem.create({
     data: {
+      userId,
       name: data.name,
       categoryId: data.categoryId,
       maxStock: data.maxStock,
@@ -26,6 +29,7 @@ export async function updateConsumableItem(
   id: string,
   data: Partial<Omit<ConsumableItem, "id">>,
 ): Promise<void> {
+  const userId = await getCurrentUserId();
   const updateData: Record<string, unknown> = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
@@ -36,19 +40,21 @@ export async function updateConsumableItem(
   if (data.keyword !== undefined) updateData.keyword = data.keyword ?? null;
   if (data.imageFileName !== undefined) updateData.imageFileName = data.imageFileName ?? null;
 
-  await prisma.consumableItem.update({ where: { id }, data: updateData });
+  await prisma.consumableItem.updateMany({ where: { id, userId }, data: updateData });
   revalidatePath("/consumable/list");
 }
 
 export async function deleteConsumableItem(id: string): Promise<void> {
-  await prisma.consumableItem.delete({ where: { id } });
+  const userId = await getCurrentUserId();
+  await prisma.consumableItem.deleteMany({ where: { id, userId } });
   revalidatePath("/consumable/list");
 }
 
 export async function decreaseStock(
   id: string,
 ): Promise<{ newStock: number }> {
-  const item = await prisma.consumableItem.findUnique({ where: { id } });
+  const userId = await getCurrentUserId();
+  const item = await prisma.consumableItem.findFirst({ where: { id, userId } });
   if (!item) return { newStock: 0 };
 
   if (item.currentStock <= 0) return { newStock: 0 };

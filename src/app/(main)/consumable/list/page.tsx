@@ -5,6 +5,7 @@ import { ConsumableFilter } from "@/components/consumable/ConsumableFilter";
 import { ConsumableListItem } from "@/components/consumable/ConsumableListItem";
 import prisma from "@/lib/prisma";
 import { toConsumableItem } from "@/lib/consumable-db";
+import { getCurrentUserId } from "@/lib/auth";
 
 type SearchParams = Promise<{
   q?: string;
@@ -17,9 +18,12 @@ export default async function ConsumableListPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { q, categoryId, sort } = await searchParams;
+  const [{ q, categoryId, sort }, userId] = await Promise.all([
+    searchParams,
+    getCurrentUserId(),
+  ]);
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { userId };
   if (q) where.name = { contains: q, mode: "insensitive" };
   if (categoryId) where.categoryId = categoryId;
 

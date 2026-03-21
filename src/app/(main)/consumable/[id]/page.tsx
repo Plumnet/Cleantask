@@ -3,15 +3,16 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { ConsumableDetailContent } from "@/components/consumable/ConsumableDetailContent";
 import prisma from "@/lib/prisma";
 import { toConsumableItem, toStockOutRecord } from "@/lib/consumable-db";
+import { getCurrentUserId } from "@/lib/auth";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
 export default async function ConsumableDetailPage({ params }: PageProps) {
-  const { id } = await params;
+  const [{ id }, userId] = await Promise.all([params, getCurrentUserId()]);
 
-  const rawItem = await prisma.consumableItem.findUnique({ where: { id } });
+  const rawItem = await prisma.consumableItem.findFirst({ where: { id, userId } });
   if (!rawItem) notFound();
 
   const rawRecords = await prisma.stockOutRecord.findMany({

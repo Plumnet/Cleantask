@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { CleaningItem } from "@/types/cleaning";
 import { toISO, addDays as addDaysToDate } from "@/lib/date-utils";
+import { getCurrentUserId } from "@/lib/auth";
 
 export async function createCleaningItem(
   data: Omit<
@@ -11,9 +12,11 @@ export async function createCleaningItem(
     "id" | "warningStatus" | "kaizenHistory" | "nextCleaningAt"
   >,
 ): Promise<void> {
+  const userId = await getCurrentUserId();
   const nextCleaningAt = addDaysToDate(data.lastCleanedAt, data.frequency);
   await prisma.cleaningItem.create({
     data: {
+      userId,
       name: data.name,
       categoryIds: data.categoryIds,
       consumableIds: data.consumableIds,
@@ -34,6 +37,7 @@ export async function updateCleaningItem(
     Omit<CleaningItem, "id" | "warningStatus" | "kaizenHistory" | "warningTask">
   >,
 ): Promise<void> {
+  const userId = await getCurrentUserId();
   const updateData: Record<string, unknown> = {};
 
   if (data.name !== undefined) updateData.name = data.name;
@@ -53,7 +57,7 @@ export async function updateCleaningItem(
     if (freq !== undefined) {
       updateData.nextCleaningAt = addDaysToDate(data.lastCleanedAt, freq);
     } else {
-      const current = await prisma.cleaningItem.findUnique({ where: { id } });
+      const current = await prisma.cleaningItem.findFirst({ where: { id, userId } });
       if (current) {
         updateData.nextCleaningAt = addDaysToDate(
           toISO(current.lastCleanedAt),
@@ -62,7 +66,7 @@ export async function updateCleaningItem(
       }
     }
   } else if (data.frequency !== undefined) {
-    const current = await prisma.cleaningItem.findUnique({ where: { id } });
+    const current = await prisma.cleaningItem.findFirst({ where: { id, userId } });
     if (current) {
       updateData.nextCleaningAt = addDaysToDate(
         toISO(current.lastCleanedAt),
@@ -71,21 +75,23 @@ export async function updateCleaningItem(
     }
   }
 
-  await prisma.cleaningItem.update({ where: { id }, data: updateData });
+  await prisma.cleaningItem.updateMany({ where: { id, userId }, data: updateData });
   revalidatePath("/cleaning/list");
 }
 
 export async function deleteCleaningItem(id: string): Promise<void> {
-  await prisma.cleaningItem.delete({ where: { id } });
+  const userId = await getCurrentUserId();
+  await prisma.cleaningItem.deleteMany({ where: { id, userId } });
   revalidatePath("/cleaning/list");
 }
 
 export async function completeCleaningTask(id: string): Promise<void> {
+  const userId = await getCurrentUserId();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const item = await prisma.cleaningItem.findUnique({
-    where: { id },
+  const item = await prisma.cleaningItem.findFirst({
+    where: { id, userId },
     include: { warningTask: true },
   });
   if (!item) return;
@@ -122,8 +128,8 @@ export async function completeCleaningTask(id: string): Promise<void> {
 
   // リンクされた消耗品の残量を減らす
   for (const consumableId of item.consumableIds) {
-    const cons = await prisma.consumableItem.findUnique({
-      where: { id: consumableId },
+    const cons = await prisma.consumableItem.findFirst({
+      where: { id: consumableId, userId },
     });
     if (!cons || cons.currentStock <= 0) continue;
 
@@ -147,11 +153,12 @@ export async function submitKaizen(
   cause: string,
   newFrequency?: number,
 ): Promise<void> {
+  const userId = await getCurrentUserId();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = toISO(today);
 
-  const item = await prisma.cleaningItem.findUnique({ where: { id: itemId } });
+  const item = await prisma.cleaningItem.findFirst({ where: { id: itemId, userId } });
   if (!item) return;
 
   const updatedFrequency = newFrequency ?? item.frequency;
@@ -191,8 +198,12 @@ export async function submitKaizen(
 }
 
 export async function cancelWarning(itemId: string): Promise<void> {
+  const userId = await getCurrentUserId();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const item = await prisma.cleaningItem.findFirst({ where: { id: itemId, userId } });
+  if (!item) return;
 
   await prisma.warningTask.updateMany({
     where: { cleaningItemId: itemId },

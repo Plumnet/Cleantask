@@ -11,6 +11,7 @@ datasource db {
 
 model CleaningItem {
   id             String   @id @default(cuid())
+  userId         String   @default("")
   name           String
   frequency      Int
   lastCleanedAt  DateTime @db.Date
@@ -50,6 +51,7 @@ model WarningTask {
 
 model ConsumableItem {
   id            String   @id @default(cuid())
+  userId        String   @default("")
   name          String
   categoryId    String
   maxStock      Int
