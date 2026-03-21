@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { CleaningItem } from "@/types/cleaning";
-import { toISO, addDaysToDate } from "@/lib/cleaning-db";
+import { toISO, addDays as addDaysToDate } from "@/lib/date-utils";
 
 export async function createCleaningItem(
   data: Omit<

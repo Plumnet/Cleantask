@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CleaningItem } from "@/types/cleaning";
@@ -9,10 +9,17 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
 import { useCleaningContext } from "@/contexts/CleaningContext";
 import { CategoryCreateModal } from "@/components/cleaning/CategoryCreateModal";
 import { mockConsumableItems } from "@/data/mockConsumable";
-import { createClient } from "@/lib/supabase/client";
+import { useImageUpload } from "@/hooks/useImageUpload";
+import {
+  MAX_CATEGORIES_PER_TASK,
+  MAX_CONSUMABLES_PER_TASK,
+  FREQUENCY_MIN,
+  FREQUENCY_MAX,
+} from "@/lib/constants";
 
 type CleaningFormProps = {
   item?: CleaningItem;
@@ -36,29 +43,15 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
     item?.lastCleanedAt ?? new Date().toISOString().split("T")[0],
   );
   const [memo, setMemo] = useState(item?.memo ?? "");
-  const [imageFileName, setImageFileName] = useState(
-    item?.imageFileName ?? "",
-  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
-
-  // 編集時：既存画像のプレビュー用 signed URL を取得
-  useEffect(() => {
-    if (!item?.imageFileName) return;
-    const supabase = createClient();
-    supabase.storage
-      .from("cleaning")
-      .createSignedUrl(item.imageFileName, 3600)
-      .then(({ data }) => {
-        if (data?.signedUrl) setImagePreviewUrl(data.signedUrl);
-      });
-  }, [item?.imageFileName]);
+  const imageUpload = useImageUpload({
+    bucket: "cleaning",
+    pathPrefix: "cleaning",
+    existingFileName: item?.imageFileName,
+  });
 
   const categoryOptions = categories
     .filter((c) => !categoryIds.includes(c.id))
@@ -69,7 +62,7 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
     .map((c) => ({ value: c.id, label: c.name }));
 
   const handleAddCategory = (catId: string) => {
-    if (!catId || categoryIds.length >= 3) return;
+    if (!catId || categoryIds.length >= MAX_CATEGORIES_PER_TASK) return;
     setCategoryIds((prev) => [...prev, catId]);
   };
 
@@ -78,7 +71,7 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
   };
 
   const handleAddConsumable = (consId: string) => {
-    if (!consId || consumableIds.length >= 6) return;
+    if (!consId || consumableIds.length >= MAX_CONSUMABLES_PER_TASK) return;
     setConsumableIds((prev) => [...prev, consId]);
   };
 
@@ -86,49 +79,13 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
     setConsumableIds((prev) => prev.filter((id) => id !== consId));
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      setUploadError("JPEG / PNG / WebP 形式の画像を選択してください");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("5MB 以下の画像を選択してください");
-      return;
-    }
-
-    setUploadError("");
-    setIsUploading(true);
-    setImagePreviewUrl(URL.createObjectURL(file));
-
-    const ext = file.name.split(".").pop();
-    const path = `cleaning/${Date.now()}.${ext}`;
-
-    const supabase = createClient();
-    const { error } = await supabase.storage.from("cleaning").upload(path, file);
-
-    if (error) {
-      setUploadError("アップロードに失敗しました: " + error.message);
-      setImagePreviewUrl("");
-    } else {
-      setImageFileName(path);
-    }
-
-    setIsUploading(false);
-    // ファイル入力をリセット（同じファイルを再選択できるよう）
-    e.target.value = "";
-  };
-
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = "タスク名を入力してください";
     if (categoryIds.length === 0)
       newErrors.category = "カテゴリーを1つ以上選択してください";
-    if (frequency < 1 || frequency > 365)
-      newErrors.frequency = "1〜365日の範囲で入力してください";
+    if (frequency < FREQUENCY_MIN || frequency > FREQUENCY_MAX)
+      newErrors.frequency = `${FREQUENCY_MIN}〜${FREQUENCY_MAX}日の範囲で入力してください`;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -145,7 +102,7 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
       lastCleanedAt,
       description: description.trim() || undefined,
       memo: memo.trim() || undefined,
-      imageFileName: imageFileName || undefined,
+      imageFileName: imageUpload.imageFileName || undefined,
     };
 
     if (isEdit && item) {
@@ -216,7 +173,7 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
                 })}
               </div>
             )}
-            {categoryIds.length < 3 && (
+            {categoryIds.length < MAX_CATEGORIES_PER_TASK && (
               <div className="flex gap-2">
                 <Select
                   options={categoryOptions}
@@ -239,7 +196,7 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
               <p className="text-sm text-red-500 mt-1">{errors.category}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              {categoryIds.length}/3 選択済み
+              {categoryIds.length}/{MAX_CATEGORIES_PER_TASK} 選択済み
             </p>
           </div>
 
@@ -273,7 +230,7 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
                 })}
               </div>
             )}
-            {consumableIds.length < 6 && (
+            {consumableIds.length < MAX_CONSUMABLES_PER_TASK && (
               <Select
                 options={consumableOptions}
                 placeholder="消耗品を選択"
@@ -282,78 +239,27 @@ export function CleaningForm({ item, isEdit = false }: CleaningFormProps) {
               />
             )}
             <p className="text-xs text-gray-500 mt-1">
-              {consumableIds.length}/6 選択済み
+              {consumableIds.length}/{MAX_CONSUMABLES_PER_TASK} 選択済み
             </p>
           </div>
 
           {/* 画像アップロード */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              画像
-            </label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                <svg
-                  className="w-4 h-4 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                {isUploading ? "アップロード中..." : "画像を挿入"}
-              </Button>
-              {imageFileName && !isUploading && (
-                <button
-                  type="button"
-                  className="text-xs text-red-500 hover:underline"
-                  onClick={() => {
-                    setImageFileName("");
-                    setImagePreviewUrl("");
-                  }}
-                >
-                  削除
-                </button>
-              )}
-            </div>
-            {uploadError && (
-              <p className="text-sm text-red-500 mt-1">{uploadError}</p>
-            )}
-            {imagePreviewUrl && (
-              <div className="mt-2">
-                <img
-                  src={imagePreviewUrl}
-                  alt="プレビュー"
-                  className="w-32 h-32 object-cover rounded-md border border-gray-200"
-                />
-              </div>
-            )}
-          </div>
+          <ImageUploadField
+            fileInputRef={imageUpload.fileInputRef}
+            isUploading={imageUpload.isUploading}
+            uploadError={imageUpload.uploadError}
+            imagePreviewUrl={imageUpload.imagePreviewUrl}
+            imageFileName={imageUpload.imageFileName}
+            onFileChange={imageUpload.handleFileChange}
+            onClear={imageUpload.clearImage}
+          />
 
           <Input
             label="掃除頻度（日数）"
             type="number"
             placeholder="例: 7"
-            min={1}
-            max={365}
+            min={FREQUENCY_MIN}
+            max={FREQUENCY_MAX}
             value={frequency}
             onChange={(e) => {
               setFrequency(Number(e.target.value));

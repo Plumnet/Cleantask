@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useCleaningContext } from "@/contexts/CleaningContext";
+import { FREQUENCY_MIN, FREQUENCY_MAX } from "@/lib/constants";
 
 type KaizenModalProps = {
   isOpen: boolean;
@@ -65,8 +66,8 @@ export function KaizenModal({ isOpen, onClose, itemId }: KaizenModalProps) {
         <Input
           label="周期（日数）"
           type="number"
-          min={1}
-          max={365}
+          min={FREQUENCY_MIN}
+          max={FREQUENCY_MAX}
           value={frequency}
           onChange={(e) => setFrequency(Number(e.target.value))}
         />

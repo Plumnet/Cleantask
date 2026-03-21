@@ -18,14 +18,7 @@ import {
   submitKaizen as submitKaizenAction,
   cancelWarning as cancelWarningAction,
 } from "@/app/(main)/cleaning/actions";
-
-const toISO = (d: Date) => d.toISOString().split("T")[0];
-
-function addDaysToDate(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return toISO(d);
-}
+import { toISO, addDaysStr } from "@/lib/date-utils";
 
 type CleaningContextValue = {
   items: CleaningItem[];
@@ -123,7 +116,7 @@ export function CleaningProvider({
         id: `tmp-${Date.now()}`,
         warningStatus: "none",
         kaizenHistory: [],
-        nextCleaningAt: addDaysToDate(item.lastCleanedAt, item.frequency),
+        nextCleaningAt: addDaysStr(item.lastCleanedAt, item.frequency),
       };
       setItems((prev) => [...prev, newItem]);
 
@@ -141,7 +134,7 @@ export function CleaningProvider({
           if (item.id !== id) return item;
           const updated = { ...item, ...updates };
           if (updates.lastCleanedAt || updates.frequency) {
-            updated.nextCleaningAt = addDaysToDate(
+            updated.nextCleaningAt = addDaysStr(
               updated.lastCleanedAt,
               updated.frequency,
             );
@@ -170,7 +163,7 @@ export function CleaningProvider({
         const updated: CleaningItem = {
           ...item,
           lastCleanedAt: todayStr,
-          nextCleaningAt: addDaysToDate(todayStr, item.frequency),
+          nextCleaningAt: addDaysStr(todayStr, item.frequency),
         };
 
         if (item.warningStatus === "warning" && item.warningTask) {
@@ -222,7 +215,7 @@ export function CleaningProvider({
           return {
             ...item,
             frequency: updatedFrequency,
-            nextCleaningAt: addDaysToDate(todayStr, updatedFrequency),
+            nextCleaningAt: addDaysStr(todayStr, updatedFrequency),
             lastCleanedAt: todayStr,
             warningStatus: "warning" as const,
             kaizenHistory: [...item.kaizenHistory, kaizenRecord].slice(-30),

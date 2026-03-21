@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useCleaningContext } from "@/contexts/CleaningContext";
+import { CATEGORY_NAME_MAX_LENGTH } from "@/lib/constants";
 
 type CategoryCreateModalProps = {
   isOpen: boolean;
@@ -27,8 +28,8 @@ export function CategoryCreateModal({
       setError("カテゴリー名を入力してください");
       return;
     }
-    if (trimmed.length > 20) {
-      setError("カテゴリー名は20文字以内で入力してください");
+    if (trimmed.length > CATEGORY_NAME_MAX_LENGTH) {
+      setError(`カテゴリー名は${CATEGORY_NAME_MAX_LENGTH}文字以内で入力してください`);
       return;
     }
 
@@ -61,11 +62,11 @@ export function CategoryCreateModal({
             setName(e.target.value);
             setError("");
           }}
-          maxLength={20}
+          maxLength={CATEGORY_NAME_MAX_LENGTH}
           error={error}
           required
         />
-        <p className="text-xs text-gray-500">{name.length}/20文字</p>
+        <p className="text-xs text-gray-500">{name.length}/{CATEGORY_NAME_MAX_LENGTH}文字</p>
         <div className="flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={handleClose}>
             キャンセル

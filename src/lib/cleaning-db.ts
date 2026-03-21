@@ -5,21 +5,12 @@ import type {
   KaizenRecord as PrismaKaizenRecord,
   WarningTask as PrismaWarningTask,
 } from "@prisma/client";
+import { toISO } from "@/lib/date-utils";
 
 type PrismaCleaningItemWithRelations = PrismaCleaningItem & {
   kaizenHistory: PrismaKaizenRecord[];
   warningTask: PrismaWarningTask | null;
 };
-
-export function toISO(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
-
-export function addDaysToDate(dateStr: string, days: number): Date {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return d;
-}
 
 function mapKaizenRecord(k: PrismaKaizenRecord): KaizenRecord {
   return {
