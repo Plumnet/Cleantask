@@ -102,7 +102,15 @@ export async function completeCleaningTask(id: string): Promise<void> {
   }
 
   const todayStr = toISO(today);
-  const nextCleaningAt = addDaysToDate(todayStr, item.frequency);
+
+  // 警戒タスクは「期限内完了なら次回日付を基点に加算」「期限超過なら今日を基点に加算」
+  const isOnTime = item.warningTask
+    ? todayStr <= toISO(item.nextCleaningAt)
+    : false;
+  const baseDate = item.warningTask && isOnTime
+    ? toISO(item.nextCleaningAt)
+    : todayStr;
+  const nextCleaningAt = addDaysToDate(baseDate, item.frequency);
 
   const updateData: Record<string, unknown> = {
     lastCleanedAt: today,
@@ -110,7 +118,6 @@ export async function completeCleaningTask(id: string): Promise<void> {
   };
 
   if (item.warningTask) {
-    const isOnTime = todayStr <= toISO(item.nextCleaningAt);
     const newCount = isOnTime
       ? item.warningTask.consecutiveOnTimeCount + 1
       : 0;

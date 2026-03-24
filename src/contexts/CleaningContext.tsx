@@ -160,14 +160,22 @@ export function CleaningProvider({
       prev.map((item) => {
         if (item.id !== id) return item;
 
+        const isOnTime =
+          item.warningStatus === "warning" && item.warningTask
+            ? todayStr <= item.nextCleaningAt
+            : false;
+        const baseDate =
+          item.warningStatus === "warning" && item.warningTask && isOnTime
+            ? item.nextCleaningAt
+            : todayStr;
+
         const updated: CleaningItem = {
           ...item,
           lastCleanedAt: todayStr,
-          nextCleaningAt: addDaysStr(todayStr, item.frequency),
+          nextCleaningAt: addDaysStr(baseDate, item.frequency),
         };
 
         if (item.warningStatus === "warning" && item.warningTask) {
-          const isOnTime = todayStr <= item.nextCleaningAt;
           const newCount = isOnTime
             ? item.warningTask.consecutiveOnTimeCount + 1
             : 0;
